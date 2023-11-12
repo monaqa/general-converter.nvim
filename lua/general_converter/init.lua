@@ -69,7 +69,9 @@ function M._op(type)
                     return item.desc
                 end,
             }, function(item)
-                converter = item.converter
+                if item ~= nil then
+                    converter = item.converter
+                end
             end)
         else
             error "cannot find any valid converter."
