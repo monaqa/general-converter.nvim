@@ -98,7 +98,7 @@ function M._op(type)
     end
     vim.cmd("normal! " .. visual_range .. '"my')
     local content = vim.fn.getreg("m", nil, nil)
-    local new_content = converter(content)
+    local new_content = converter(content, type)
 
     if content == new_content then
         return
@@ -159,7 +159,6 @@ function M.operator_convert(converter)
         else
             converter_state = { determined = false, cands = converters }
         end
-        vim.print(converter_state)
         vim.opt.operatorfunc = "general_converter#operator"
         return "g@"
     end
