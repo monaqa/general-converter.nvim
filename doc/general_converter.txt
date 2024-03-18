@@ -1,0 +1,188 @@
+*general-converter.txt*  Create your own operator with Lua str-to-str function
+
+Author: Mogami Shinichi (@monaqa) <cmonaqa{at}google.com>
+Version: 0.1.0
+License: MIT license
+	<https://github.com/monaqa/general-converter.nvim/blob/master/LICENSE>
+
+==============================================================================
+CONTENTS								*general-converter-contents*
+
+Requirements					|general-converter-requirements|
+Usage							|general-converter-usage|
+API								|general-converter-api|
+
+==============================================================================
+REQUIREMENTS							*general-converter-requirements*
+
+* Neovim 0.9.0 or later
+
+==============================================================================
+USAGE									*general-converter-usage*
+
+1. Register string converters you like using `setup()` function.
+>
+	require("general_converter").setup {
+		converters = {
+			{
+				desc = "Calculate as Vim script expression (e.g. 1 + 2 -> 3)",
+				converter = function(text)
+					return vim.fn.string(vim.api.nvim_eval(text))
+				end,
+				labels = { "calc" },
+			},
+			{
+				desc = "halve indentation",
+				converter = require("general_converter.util").linewise_converter(
+					function(line)
+						local _, indent = line:find "^[ ]*"
+						local indent_after = math.floor(indent / 2)
+						if indent_after >= 0 then
+							line = (" "):rep(indent_after) .. line:sub(indent + 1)
+						end
+						return line
+					end
+				),
+				labels = { "indent" },
+			},
+			{
+				desc = "double indentation",
+				converter = require("general_converter.util").linewise_converter(
+					function(line)
+						local _, indent = line:find "^[ ]*"
+						local indent_after = indent * 2
+						if indent_after >= 0 then
+							line = (" "):rep(indent_after) .. line:sub(indent + 1)
+						end
+						return line
+					end
+				),
+				labels = { "indent" },
+			},
+		},
+	}
+<
+
+2. Register some key mappings.
+
+>
+	-- Choose converters from pre-defined ones
+	vim.keymap.set(
+		{ "n", "x" },
+		"<Space>c",
+		require("general_converter").operator_convert(),
+		{ expr = true }
+	)
+	vim.keymap.set(
+		"n",
+		"<Space>cc",
+		require("general_converter").operator_convert_line(),
+		{ expr = true }
+	)
+
+	-- Choose converters from pre-defined ones with label "indent"
+	vim.keymap.set(
+		{ "n", "x" },
+		"<Space>i",
+		require("general_converter").operator_convert "indent",
+		{ expr = true }
+	)
+	vim.keymap.set(
+		"n",
+		"<Space>ii",
+		require("general_converter").operator_convert_line "indent",
+		{ expr = true }
+	)
+
+	-- If there is only one converter labeled "calc", it is automatically selected
+	vim.keymap.set(
+		{ "n", "x" },
+		"<Space>C",
+		require("general_converter").operator_convert "calc",
+		{ expr = true }
+	)
+	vim.keymap.set(
+		"n",
+		"<Space>CC",
+		require("general_converter").operator_convert_line "calc",
+		{ expr = true }
+	)
+
+	-- You can directly specify the converter
+	local function my_converter(text)
+		return text:rep(2, "")
+	end
+	vim.keymap.set(
+		{ "n", "x" },
+		"@r",
+		require("general_converter").operator_convert(my_converter),
+		{ expr = true }
+	)
+	vim.keymap.set(
+		"n",
+		"@rr",
+		require("general_converter").operator_convert_line(my_converter),
+		{ expr = true }
+	)
+<
+
+3. That's it. Have fun!
+
+==============================================================================
+API										*general-converter-api*
+
+
+										*general-converter-api-setup*
+require("general_converter").setup([opts])
+
+Configure the general_converter settings. `opts` is a table with the following
+fields:
+
+	converters:
+		An array of converters, see below for converters.
+
+converter is a table with the following fields:
+
+	desc (string):
+		A string that completely describes the behavior of the
+		converter. When choosing among multiple converters s, it is used to
+		display the choices when selecting one of them.
+	converter (function):
+		A function used to convert the target string.
+	labels (string[]):
+		Labels associated with the converter.
+
+								*general-converter-api-operator_convert*
+require("general_converter").operator_convert([converter])
+
+	Outputs a key sequence representing the operator that performs the given
+	converter.
+
+	If `converter` is omitted, the user can select manually from among all
+	converters registered with `setup()`.
+	If `converter` is given as a string, it is regarded as a label, and the
+	user manually selects one of the converters registered with `setup()` that
+	contains the given label. If there is only one candidate, it is
+	automatically selected by the user.
+	If `converter` is a function, it is assumed to be a direct string
+	conversion function, and is applied automatically.
+
+								*general-converter-api-operator_convert_line*
+require("general_converter").operator_convert_line(t)
+
+	Outputs a key sequence representing the command that performs the given
+	converter to a cursor line.
+
+								*general-converter-api-linewise_converter*
+require("general_converter.util").linewise_converter(func)
+
+	Returns a function that converts the entire string by applying the given
+	function line by line.
+
+								*general-converter-api-charwise_converter*
+require("general_converter.util").charwise_converter(func)
+
+	Returns a function that would convert the entire string by applying the
+	given function character by character.
+
+vim:tw=78:fo=tcq2mM:ts=4:ft=help:norl:noet:fdm=marker:fen
