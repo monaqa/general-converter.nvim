@@ -1,3 +1,4 @@
+local misc = require("general_converter.misc")
 local M = {}
 
 ---@alias Config {converters: ConvertConfig[]}
@@ -14,7 +15,7 @@ local M = {}
 ---@param arg1 string | function
 ---@param arg2? string
 local function validate_list(name, list, arg1, arg2)
-    if not vim.tbl_islist(list) then
+    if not vim.islist(list) then
         error(("%s is not list."):format(name))
     end
 
@@ -74,7 +75,7 @@ function M._op(type)
                 end
             end)
         else
-            error "cannot find any valid converter."
+            error("cannot find any valid converter.")
         end
     end
 
@@ -84,36 +85,29 @@ function M._op(type)
     end
     converter_state = { determined = true, converter = converter }
 
-    -- backup
-    local sel_save = vim.o.selection
-    local m_reg = vim.fn.getreg("m", nil, nil)
+    misc.with_opt { selection = "inclusive" }(function()
+        misc.borrow_register { "m" }(function()
+            local visual_range
+            if type == "line" then
+                visual_range = "'[V']"
+            else
+                visual_range = "`[v`]"
+            end
+            vim.cmd("normal! " .. visual_range .. '"my')
+            local content = vim.fn.getreg("m", nil, nil)
+            local new_content = converter(content, type)
+            if content == new_content then
+                return
+            end
 
-    vim.o.selection = "inclusive"
-
-    local visual_range
-    if type == "line" then
-        visual_range = "'[V']"
-    else
-        visual_range = "`[v`]"
-    end
-    vim.cmd("normal! " .. visual_range .. '"my')
-    local content = vim.fn.getreg("m", nil, nil)
-    local new_content = converter(content, type)
-
-    if content == new_content then
-        return
-    end
-
-    if type == "line" then
-        vim.fn.setreg("m", new_content, "V")
-    else
-        vim.fn.setreg("m", new_content, "v")
-    end
-    vim.cmd("normal! " .. visual_range .. '"mp')
-
-    -- restore
-    vim.o.selection = sel_save
-    vim.fn.setreg("m", m_reg, nil)
+            if type == "line" then
+                vim.fn.setreg("m", new_content, "V")
+            else
+                vim.fn.setreg("m", new_content, "v")
+            end
+            vim.cmd("normal! " .. visual_range .. '"mp')
+        end)
+    end)
 end
 
 ---@param config Config
