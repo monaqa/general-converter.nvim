@@ -15,7 +15,7 @@ local M = {}
 ---@param arg1 string | function
 ---@param arg2? string
 local function validate_list(name, list, arg1, arg2)
-    if not vim.tbl_islist(list) then
+    if not vim.islist(list) then
         error(("%s is not list."):format(name))
     end
 
