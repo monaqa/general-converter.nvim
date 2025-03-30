@@ -65,7 +65,7 @@ function M._op(type)
         converter = converter_state.converter
     else
         if #converter_state.cands >= 1 then
-            vim.ui.select(converter_state.cands, {
+            misc.sync_ui_select(converter_state.cands, {
                 format_item = function(item)
                     return item.desc
                 end,

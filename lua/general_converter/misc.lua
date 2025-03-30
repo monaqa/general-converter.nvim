@@ -40,4 +40,15 @@ function M.borrow_register(t)
     end
 end
 
+function M.sync_ui_select(items, opts, on_choice)
+    local prompt = opts.prompt or "Select one of:"
+    local format_item = opts.format_item or tostring
+    local t = { prompt }
+    for idx, item in ipairs(items) do
+        t[#t + 1] = tostring(idx) .. ". " .. format_item(item)
+    end
+    local result = vim.fn.inputlist(t)
+    on_choice(items[result])
+end
+
 return M
